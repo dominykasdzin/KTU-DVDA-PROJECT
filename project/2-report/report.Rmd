@@ -1,34 +1,231 @@
 ---
-title: "test"
-author: "test"
-date: "10/3/2021"
+title: "Žvalgomoji analizė"
+author: "Dominykas Dzingelevičius"
+date: "`r Sys.Date()`"
 output:
   html_document:
     keep_md: true
 ---
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+```{r message=FALSE, warning=FALSE, echo=FALSE}
+library(tidyverse)
+library(knitr)
+library(DT)
 ```
 
-TEST
-
-## R Markdown
-
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
-
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
-
-```{r cars}
-summary(cars)
+```{r message=FALSE, warning=FALSE, cache=TRUE, echo=FALSE}
+df <- read_csv("../1-data/train_data.csv")
 ```
 
-## Including Plots
+Duomenų failo dimensijos:
 
-You can also embed plots, for example:
 
-```{r pressure, echo=FALSE}
-plot(pressure)
+```{r echo=FALSE}
+dim(df)
+```
+# Kintamųjų apžvalga
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+df <- df %>%
+  mutate(
+    y = as.factor(y),
+    term = as.factor(term),
+    credit_score = as.factor(credit_score),
+    loan_purpose = as.factor(loan_purpose),
+    home_ownership = as.factor(home_ownership)) 
+df %>%
+  summary() %>%
+  kable()
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+Pateikę bendras kintamųjų charakteristikas atskirai apžvelgiame tekstinius kintamuosius:
+
+```{r echo=FALSE}
+df %>%
+  group_by(loan_purpose) %>%
+  summarise(n = n()) %>%
+  arrange(desc(n)) %>%
+  kable()
+```
+
+```{r echo=FALSE}
+df %>%
+  group_by(term) %>%
+  summarise(n = n()) %>%
+  arrange(desc(n)) %>%
+  kable()
+```
+
+```{r echo=FALSE}
+df %>%
+  group_by(credit_score) %>%
+  summarise(n = n()) %>%
+  arrange(desc(n)) %>%
+  kable()
+```
+
+```{r echo=FALSE}
+df %>%
+  group_by(home_ownership) %>%
+  summarise(n = n()) %>%
+  arrange(desc(n)) %>%
+  kable()
+```
+
+Taip pat atliekame grafinę analizę:
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+df %>%
+  group_by(y, loan_purpose) %>%
+  summarise(n = n()) %>%
+  ggplot(aes(fill=y, y=n, x=reorder(loan_purpose, n))) + 
+  geom_bar(position="dodge", stat="identity") + 
+  coord_flip() +
+  scale_y_continuous(labels = scales::comma) +
+  theme_dark() +
+  labs(
+    x = "Paskolos tikslas",
+    y = "Paskolų kiekis",
+    fill = "Outcome"
+  )
+
+df %>%
+  group_by(y, term) %>%
+  summarise(n = n()) %>%
+  ggplot(aes(fill=y, y=n, x=reorder(term, n))) + 
+  geom_bar(position="dodge", stat="identity") + 
+  coord_flip() +
+  scale_y_continuous(labels = scales::comma) +
+  theme_dark() +
+  labs(
+    x = "Paskolos trukmė",
+    y = "Paskolų kiekis",
+    fill = "Outcome"
+  )
+
+df %>%
+  group_by(y, credit_score) %>%
+  summarise(n = n()) %>%
+  ggplot(aes(fill=y, y=n, x=reorder(credit_score, n))) + 
+  geom_bar(position="dodge", stat="identity") + 
+  coord_flip() +
+  scale_y_continuous(labels = scales::comma) +
+  theme_dark() +
+  labs(
+    x = "Kredito vertinimas",
+    y = "Paskolų kiekis",
+    fill = "Outcome"
+  )
+
+df %>%
+  group_by(y, home_ownership) %>%
+  summarise(n = n()) %>%
+  ggplot(aes(fill=y, y=n, x=reorder(home_ownership, n))) + 
+  geom_bar(position="dodge", stat="identity") + 
+  coord_flip() +
+  scale_y_continuous(labels = scales::comma) +
+  theme_dark() +
+  labs(
+    x = "Gyvenamas būstas",
+    y = "Paskolų kiekis",
+    fill = "Outcome"
+  )
+```
+
+
+
+Daugiausiai bankrotų imant paskolą šiems tikslams:
+
+```{r message=FALSE, warning=FALSE, echo=FALSE}
+df %>%
+  filter(y == 1) %>%
+  group_by(loan_purpose) %>%
+  summarise(percentage = n() / nrow(filter(df, y == 1)) * 100) %>%
+  arrange(desc(percentage)) %>%
+  head(10) %>%
+  kable()
+```
+
+Daugiausiai tokios trukmės bankrotų:
+
+```{r message=FALSE, warning=FALSE, echo=FALSE}
+df %>%
+  filter(y == 1) %>%
+  group_by(term) %>%
+  summarise(percentage = n() / nrow(filter(df, y == 1)) * 100) %>%
+  arrange(desc(percentage)) %>%
+  head(10) %>%
+  kable()
+```
+
+Daugiausiai bankrotų su tokiu kredito vertinimu:
+
+```{r message=FALSE, warning=FALSE, echo=FALSE}
+df %>%
+  filter(y == 1) %>%
+  group_by(credit_score) %>%
+  summarise(percentage = n() / nrow(filter(df, y == 1)) * 100) %>%
+  arrange(desc(percentage)) %>%
+  head(10) %>%
+  kable()
+```
+
+Bankrotai pagal gyvenamojo būsto nuosavybės tipą:
+
+```{r message=FALSE, warning=FALSE, echo=FALSE}
+df %>%
+  filter(y == 1) %>%
+  group_by(home_ownership) %>%
+  summarise(percentage = n() / nrow(filter(df, y == 1)) * 100) %>%
+  arrange(desc(percentage)) %>%
+  head(10) %>%
+  kable()
+```
+
+Papildomai galime panagrinėti interaktyvias lenteles pagal kiekvieną tekstines reikšmes turintį kintamąjį:
+
+```{r message=FALSE, warning=FALSE, echo=FALSE}
+df %>%
+  group_by(y, loan_purpose) %>%
+  summarise(n = n()) %>%
+  datatable()
+```
+
+```{r message=FALSE, warning=FALSE, echo=FALSE}
+df %>%
+  group_by(y, term) %>%
+  summarise(n = n()) %>%
+  datatable()
+```
+
+```{r message=FALSE, warning=FALSE, echo=FALSE}
+df %>%
+  group_by(y, credit_score) %>%
+  summarise(n = n()) %>%
+  datatable()
+```
+
+```{r message=FALSE, warning=FALSE, echo=FALSE}
+df %>%
+  group_by(y, home_ownership) %>%
+  summarise(n = n()) %>%
+  datatable()
+```
+
+# Išvados
+
+Įvairiais pjūviais pateikę turimus duomenis visų pirma matome, kad egzistuoja nemažai trūkstamų reikšmių: 
+
+* `yearly_income` iš 10 milijonų reikšmių turi 1.9 milijono NA, arba kitaip 19%, o jau *a priori* žinant, kad gaunamos pajamos yra vienas esminių faktorių paskolos gavimui ar negavimui nuspręsti, galime numanyti, kad ši problema turės nemažą įtaką ir modelio tikslumui. O taip pat ir tiesiog pakeisti šių NA reikšmių kokiais nors pagrįstais skaičiais nepavyks, nes pats kintamasis turi labai didelę variaciją ir keisti paprastu vidurkiu ar mediana nebūtų protinga. Spėjimas, kad NA reikšmės šiuo atveju reiškia, kad klientas tiesiog negauna jokių pajamų per metus, taip pat nepasiteisina - `years_current_job` kintamojo reikšmės yra > 0, todėl tai reikštų, kad klientas turi darbą, bet negauna pajamų. 
+* `bankruptcies` - 18,354 NA reikšmių, tai yra vos 0.18% iš visų įrašų, todėl galime numanyti, kad šios trūkstamos reikšmės nesukels didelių problemų.
+* `years_current_job` - 422,327 NA reikšmių arba 4.22%. Iš charakteristikų matome, kad šiuo atveju galėtume keisti reikšmes tiek vidurkiu, tiek mediana, abu jie siekia 6, tačiau pats kintamasis vargu ar yra informatyvus paskolos sėkmingumo kontekste, nes jo sklaida yra pakankamai nedidelė, reikšmės pasiskirsčiusios intervale [0:10].
+* `months_since_last_delinquent` - net 5,317,819 arba 53.18% NA reikšmių. Tai iš pirmo žvilgsnio suponuoja, kad šis kintamasis yra visai nereikšmingas, nes paprasčiausiai yra tuščias, neturi reikšmių. Tačiau šios NA reikšmės taip pat turi prasmę, nes jei neegzistuoja joks mėnesių kiekis nuo paskutinio atlikto teisės pažeidimo, vadinasi teisės pažeidimai niekada nebuvo fiksuoti ir nagrinėjamas klientas nėra nusikaltęs.
+* `max_open_credit` - šis kintamasis turi tik 192 NA reikšmes, o tai sudaro 0.002% visų turimų įrašų, todėl jos modelio tikslumo tikrai neiškraipys.
+
+Žvelgdami detaliau į tekstinius kintamuosius matome, kad klientų paskolų tikslas dažniausiai yra visada tas pats: jau turimų skolų konsolidavimas. Tokių paskolų buvo imama kiek mažiau, nei 8 milijonus kartų, iš kurių 6 milijonai paskolų buvo sėkmingos. Dar nors kiek labiau populiarios paskolos yra namų remontui ir kažkokiam kitam, nedetalizuotam tikslui.
+
+Kalbant apie paskolos trukmę, klientai yra labiau linkę imti trumpalaikes paskolas, tačiau jos yra ir santykinai geresnės, t.y. pasižymi geresniu sėkmingumo rezultatu: jei trumpalaikių paskolų kategorijoje sėkmingumas siekia apie 80%, arba kitaip tariant kas penkta paskola yra nesėkminga, tai ilgalaikių paskolų atveju sėkmingumas yra apie 67% - nesėkminga jau kas trečia paskola. 
+
+Žvelgiant į klientų kredito vertinimus matome, kad daugiausiai paskolų yra suteikiama tiems klientams, kurių kreditingumas yra vertinamas "gerai" ir didžioji dalis tokio vertinimo atitinka savo pavadinimą - iš daugiau nei 5 milijonų "gerai" įvertintų klientų apie 1 milijonas nebuvo sėkmingi. Čia taip pat išsiskiria "labai gerai" įvertintas kreditingumas, vėlgi didžiąja dalimi atitinkantis savo vertinimą, tačiau net ir šioje kategorijoje pasitaikė klaidų: kiek daugiau, nei pusantro milijono paskolų buvo sėkmingos, tačiau apie 200 tūkst. buvo nesėkmingos. Čia taip pat reikėtų atkreipti dėmesį ir į NA reikšmes: tais atvejais, kai kreditingumas nebuvo įvertintas, paskolos sėkmingumas buvo itin mažas, santykinai net mažesnis už "pakankamai" įvertintą kreditingumą: paskolų, kai kreditingumas neįvertintas, buvo išduota 2,37 milijono, o iš jų milijonas paskolų buvo nesėkmingos. Šioje vietoje reikėtų pasiaiškinti, kodėl šiais atvejais kreditingumo vertinimas nebuvo prieinamas ir atkreipti ypatingą dėmesį į tokius atvejus, nes kaip rodo statistika, tokios paskolos yra labai rizikingos.
+
+Galiausiai nagrinėdami kliento gyvenamojo būsto tipo kintamąjį matome, kad, kaip nesunkiai galima ir nuspėti, prasčiausiai pasirodo tie klientai, kurie gyvena nuomojame būste. Tokiems klientams išduotos paskolos buvo 26.4% atvejų nesėkmingos. Antrąją vietą pagal tokį santykinį paskolų nesėkmingumą užima klientai, kurie gyvena nuosavame būste: 24.74% paskolų jiems buvo nesėkmingos. Iš pirmo žvilgsnio atrodytų, kad tokie klientai turėtų būti finansiškai labiausiai atsakingi, tačiau įmanoma ir tai, kad dėl turimo turto per daug pasitiki savo galimybėmis ir neįvertina paskolos rizikos. Na ir mažiausiai rizikinga klientų grupė yra tų, kurių būstas yra įkeistas - šio tipo klientams išduotos paskolos buvo nesėkmingos 22.2% iš visų atvejų.
